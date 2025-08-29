@@ -1,0 +1,197 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Listening Math Game – Kru Pai Classroom</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;600;700&family=Fredoka:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#F9FBFF;
+      --card:#FFFFFF;
+      --ink:#1A1A1A;
+      --muted:#555;
+      --brand:#2A9D8F;
+      --accent:#F4A261;
+      --ok:#2ECC71;
+      --bad:#E74C3C;
+      --shadow: 0 8px 22px rgba(0,0,0,.08);
+      --radius: 20px;
+    }
+    *{box-sizing:border-box}
+    body{ margin:0; background:var(--bg); color:var(--ink); font-family:"Prompt",sans-serif;
+          display:flex; justify-content:center; min-height:100vh; padding:24px; }
+    .app{ width:min(960px,100%); }
+    .brand{ display:flex; flex-direction:column; align-items:center; gap:8px; margin-bottom:18px; }
+    .logo{ width:70px; height:70px; border-radius:50%; background:linear-gradient(135deg,var(--brand),#48C9B0);
+           box-shadow:var(--shadow); display:flex; align-items:center; justify-content:center; color:white; font:700 26px Fredoka; }
+    .title{ font:700 26px "Fredoka", sans-serif; color:var(--brand) }
+    .card{ background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); padding:26px; }
+    .hero{text-align:center}
+    h1{ font:700 clamp(22px,4.2vw,32px) "Fredoka"; margin:6px 0 10px; color:var(--brand) }
+    p.lead{ color:var(--muted); font-size:18px }
+    .btn{ cursor:pointer; border:none; border-radius:14px; padding:14px 18px; font:700 18px "Fredoka"; transition:.2s }
+    .btn.primary{ background:linear-gradient(135deg,var(--brand),#48C9B0); color:white; box-shadow:0 6px 15px rgba(42,157,143,.3) }
+    .btn.secondary{ background:#fff; color:var(--brand); border:2px solid var(--brand) }
+    .btn.warn{ background:#fff; color:#C97A21; border:2px dashed #C97A21 }
+    .row{ display:flex; gap:12px; flex-wrap:wrap; align-items:center }
+    input[type=number]{ width:200px; padding:14px; border-radius:14px; border:2px solid #E2E8F0; font-size:18px; }
+    input[type=number]:focus{ border-color:var(--brand); outline:none; }
+    .badge{ background:#EAFBF9; color:var(--brand); padding:6px 12px; border-radius:999px; font-weight:600 }
+    .score{ font:700 22px Fredoka; color:var(--accent); }
+    .timer{ font:700 20px Fredoka; color:var(--accent); }
+    .question-box{ display:grid; gap:10px }
+    .sentence{ display:none; border:2px dashed #DDD; border-radius:14px; padding:12px; background:#FAFAFA }
+    .feedback{ font:700 18px Fredoka; }
+    .good{ color:var(--ok) } .bad{ color:var(--bad) }
+    .brandfoot{text-align:center; margin-top:18px; font-size:14px; color:#888 }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="brand">
+      <div class="logo">KP</div>
+      <div class="title">Kru Pai Classroom</div>
+    </div>
+
+    <section id="start" class="card hero">
+      <h1>🎧 Listening Math Game</h1>
+      <p class="lead">Rules: Answer correctly just by listening = <b>+3 points</b>. If you press <i>Show Sentence</i>, then correct = <b>+1 point</b>. Wrong = 0. Each question has <b>20 seconds</b>.</p>
+      <button class="btn primary" onclick="startGame()">▶️ Start Game</button>
+    </section>
+
+    <section id="play" class="card" style="display:none">
+      <div class="row" style="justify-content:space-between">
+        <span class="badge" id="progress">Q 1/20</span>
+        <span class="score" id="totalscore">Score 0</span>
+        <span class="timer" id="timer">20</span>
+      </div>
+      <div class="question-box">
+        <div class="row">
+          <button class="btn secondary" onclick="speak()">🔊 Listen</button>
+          <button class="btn warn" onclick="reveal()">👀 Show Sentence (+1)</button>
+        </div>
+        <div id="sentence" class="sentence"></div>
+        <div class="row">
+          <input id="answer" type="number" inputmode="numeric" placeholder="Answer number" />
+          <button class="btn primary" onclick="submitAnswer()">Submit</button>
+        </div>
+        <div id="feedback" class="feedback"></div>
+        <div class="row">
+          <button id="nextBtn" class="btn secondary" onclick="nextQ()" style="display:none">➡️ Next</button>
+          <button id="restartBtn" class="btn secondary" onclick="restart()" style="display:none">🔁 Restart</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="result" class="card" style="display:none; text-align:center">
+      <h2 class="score" id="finalScore">Final Score 0/60</h2>
+      <p id="detail"></p>
+      <button class="btn secondary" onclick="restart()">🔁 Play Again</button>
+      <div class="brandfoot">© Kru Pai Classroom</div>
+    </section>
+  </div>
+
+<script>
+  // ===== 20 Problems in English =====
+  const problems = [
+    { s: "What is fifty plus one hundred?", ans:150 },
+    { s: "What is one hundred divided by five?", ans:20 },
+    { s: "What is twelve plus eight?", ans:20 },
+    { s: "What is thirty minus seven?", ans:23 },
+    { s: "What is nine times six?", ans:54 },
+    { s: "What is forty divided by eight?", ans:5 },
+    { s: "What is twenty five plus seventy five?", ans:100 },
+    { s: "What is fourteen plus thirteen?", ans:27 },
+    { s: "What is forty five minus fifteen?", ans:30 },
+    { s: "What is seven times seven?", ans:49 },
+    { s: "What is sixty plus twenty?", ans:80 },
+    { s: "What is ninety divided by ten?", ans:9 },
+    { s: "What is eleven times eleven?", ans:121 },
+    { s: "What is one hundred minus sixty?", ans:40 },
+    { s: "What is fifteen times two?", ans:30 },
+    { s: "What is eighty divided by four?", ans:20 },
+    { s: "What is twenty plus thirty five?", ans:55 },
+    { s: "What is fifty minus twenty?", ans:30 },
+    { s: "What is six times eight?", ans:48 },
+    { s: "What is one hundred twenty divided by six?", ans:20 },
+  ];
+
+  let i=0, total=0, potential=3, revealed=false, revealedEver=false;
+  let timeLeft=20, timerInterval;
+
+  const el={
+    start:document.getElementById('start'),
+    play:document.getElementById('play'),
+    result:document.getElementById('result'),
+    progress:document.getElementById('progress'),
+    totalscore:document.getElementById('totalscore'),
+    timer:document.getElementById('timer'),
+    sentence:document.getElementById('sentence'),
+    answer:document.getElementById('answer'),
+    feedback:document.getElementById('feedback'),
+    nextBtn:document.getElementById('nextBtn'),
+    restartBtn:document.getElementById('restartBtn'),
+    finalScore:document.getElementById('finalScore'),
+    detail:document.getElementById('detail')
+  };
+
+  function startGame(){
+    i=0; total=0; revealedEver=false;
+    el.start.style.display='none'; el.result.style.display='none'; el.play.style.display='block';
+    loadQ();
+  }
+  function restart(){ speechSynthesis.cancel(); startGame(); }
+
+  function loadQ(){
+    potential=3; revealed=false;
+    el.feedback.textContent=''; el.sentence.style.display='none'; el.answer.value=''; el.answer.disabled=false;
+    el.nextBtn.style.display='none'; el.restartBtn.style.display='none';
+    el.progress.textContent=`Q ${i+1}/${problems.length}`; el.totalscore.textContent=`Score ${total}`;
+    startTimer(); speak();
+  }
+
+  function speak(){
+    speechSynthesis.cancel();
+    const u=new SpeechSynthesisUtterance(problems[i].s);
+    u.lang='en-US'; u.rate=0.8;
+    speechSynthesis.speak(u);
+  }
+
+  function reveal(){ el.sentence.textContent=problems[i].s; el.sentence.style.display='block'; potential=1; revealed=true; revealedEver=true; }
+
+  function submitAnswer(){
+    const val=parseInt(el.answer.value,10); if(isNaN(val)){ alert('Type your number answer'); return; }
+    clearInterval(timerInterval);
+    const correct=(val===problems[i].ans);
+    if(correct){ total+=potential; el.feedback.innerHTML=`<span class="good">✅ Correct! +${potential}</span>`; }
+    else{ el.feedback.innerHTML=`<span class="bad">❌ Wrong</span>`; }
+    el.totalscore.textContent=`Score ${total}`;
+    el.nextBtn.style.display=(i<problems.length-1)?'inline-block':'none';
+    el.restartBtn.style.display=(i===problems.length-1)?'inline-block':'none';
+    el.answer.disabled=true;
+    if(i===problems.length-1){ showResult(); }
+  }
+
+  function nextQ(){ i++; if(i<problems.length){ loadQ(); } else { showResult(); } }
+
+  function startTimer(){
+    clearInterval(timerInterval); timeLeft=20; el.timer.textContent=timeLeft;
+    timerInterval=setInterval(()=>{
+      timeLeft--; el.timer.textContent=timeLeft;
+      if(timeLeft<=0){ clearInterval(timerInterval); el.feedback.innerHTML='<span class="bad">⏰ Time up!</span>'; el.nextBtn.style.display=(i<problems.length-1)?'inline-block':'none'; if(i===problems.length-1)showResult(); }
+    },1000);
+  }
+
+  function showResult(){
+    el.play.style.display='none'; el.result.style.display='block';
+    const max=problems.length*3;
+    el.finalScore.textContent=`Final Score ${total}/${max}`;
+    el.detail.textContent=revealedEver? "You used Show Sentence at least once." : "No Show Sentence used. Excellent!";
+  }
+</script>
+</body>
+</html>
